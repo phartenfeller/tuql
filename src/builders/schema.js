@@ -1,36 +1,35 @@
 import fs from 'fs';
 import {
-  GraphQLSchema,
-  GraphQLObjectType,
-  GraphQLList,
   GraphQLBoolean,
+  GraphQLList,
+  GraphQLObjectType,
+  GraphQLSchema
 } from 'graphql';
 import {
-  resolver,
   attributeFields,
-  defaultListArgs,
   defaultArgs,
+  defaultListArgs,
+  resolver
 } from 'graphql-sequelize';
-import { singular } from 'pluralize';
+import pluralize, { singular } from 'pluralize';
 import Sequelize, { QueryTypes } from 'sequelize';
-
-import createDefinitions from './definitions';
 import {
-  isJoinTable,
   findModelKey,
   formatFieldName,
   formatTypeName,
-  pascalCase,
+  isJoinTable,
+  pascalCase
 } from '../utils';
-import { joinTableAssociations, tableAssociations } from './associations';
 import {
-  makeCreateArgs,
-  makeUpdateArgs,
-  makeDeleteArgs,
   getPkFieldKey,
-  makePolyArgs,
   getPolyKeys,
+  makeCreateArgs,
+  makeDeleteArgs,
+  makePolyArgs,
+  makeUpdateArgs
 } from './arguments';
+import { joinTableAssociations, tableAssociations } from './associations';
+import createDefinitions from './definitions';
 
 const GenericResponseType = new GraphQLObjectType({
   name: 'GenericResponse',
@@ -168,7 +167,7 @@ const build = db => {
 
       types[key] = type;
 
-      queries[formatFieldName(key)] = {
+      queries[pluralize(formatFieldName(key))] = {
         type: new GraphQLList(type),
         args: defaultListArgs(model),
         resolve: resolver(model),
@@ -258,6 +257,8 @@ const build = db => {
         });
       });
     });
+
+    console.log('queries => ', JSON.stringify(queries));
 
     const query = new GraphQLObjectType({
       name: 'Query',

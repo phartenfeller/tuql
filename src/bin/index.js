@@ -1,3 +1,6 @@
+import cors from 'cors';
+import express from 'express';
+import graphqlHTTP from 'express-graphql';
 import fs from 'fs';
 import { printSchema } from 'graphql';
 import { buildSchemaFromDatabase } from '../builders/schema';
@@ -15,6 +18,21 @@ const FilePath = path => {
 async function getGraphQLSchema(filePath) {
   const schema = await buildSchemaFromDatabase(filePath);
   console.log(printSchema(schema));
+
+  const app = express();
+
+  app.use(
+    '/graphql',
+    cors(),
+    graphqlHTTP({
+      schema,
+      graphiql: true,
+    })
+  );
+
+  app.listen(4000, () =>
+    console.log(` > Running at http://localhost:${4000}/graphql`)
+  );
 }
 
 /*
