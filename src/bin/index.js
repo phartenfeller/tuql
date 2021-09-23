@@ -1,17 +1,6 @@
-#!/usr/bin/env node
-
 import fs from 'fs';
-import express from 'express';
-import graphqlHTTP from 'express-graphql';
-import cors from 'cors';
-import commandLineArgs from 'command-line-args';
-import commandLineUsage from 'command-line-usage';
 import { printSchema } from 'graphql';
-
-import {
-  buildSchemaFromDatabase,
-  buildSchemaFromInfile,
-} from '../builders/schema';
+import { buildSchemaFromDatabase } from '../builders/schema';
 
 const FilePath = path => {
   if (!fs.existsSync(path)) {
@@ -23,6 +12,12 @@ const FilePath = path => {
   return fs.realpathSync(path);
 };
 
+async function getGraphQLSchema(filePath) {
+  const schema = await buildSchemaFromDatabase(filePath);
+  console.log(printSchema(schema));
+}
+
+/*
 const optionDefinitions = [
   {
     name: 'graphiql',
@@ -82,11 +77,9 @@ if (options.help) {
   console.log(usage);
   process.exit();
 }
+*/
 
-const promise = options.infile
-  ? buildSchemaFromInfile(options.infile)
-  : buildSchemaFromDatabase(options.db);
-
+/*
 if (options.schema) {
   promise.then(schema => process.stdout.write(printSchema(schema)));
 } else {
@@ -114,3 +107,6 @@ if (options.schema) {
     );
   });
 }
+*/
+
+export default getGraphQLSchema;
