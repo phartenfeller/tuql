@@ -1,8 +1,15 @@
 {
   "name": "@phartenfeller/tuql",
   "version": "0.0.1",
-  "description": "",
+  "description": "Fork of tuql without CLI but usable as a library",
   "main": "dist/index.js",
+  "author": "Philipp Hartenfeller",
+  "license": "MIT",
+  "keywords": [
+    "graphql",
+    "sqlite"
+  ],
+  "private": false,
   "scripts": {
     "start": "node dist/index.js",
     "build": "yarn tsc",
@@ -11,12 +18,6 @@
     "test:watch": "jest --watch",
     "start-server": "yarn ts-node testUtils/startServer.ts"
   },
-  "author": "Brad Daily <brad.daily@gmail.com>",
-  "license": "MIT",
-  "keywords": [
-    "graphql",
-    "sqlite"
-  ],
   "dependencies": {
     "camelcase": "^5.3.1",
     "command-line-args": "^5.1.1",
