@@ -1,10 +1,18 @@
 import initGraphQLServer from '../index';
 import express from 'express';
 
-const app = express();
+async function main() {
+  const app = express();
 
-initGraphQLServer({
-  filePath: './testUtils/chinook.db',
-  mutation: false,
-  expressApp: app,
-});
+  await initGraphQLServer({
+    filePath: './testUtils/chinook.db',
+    mutation: false,
+    expressApp: app,
+  });
+
+  app.listen(4000, () =>
+    console.log(` > Running at http://localhost:${4000}/graphql`)
+  );
+}
+
+main();

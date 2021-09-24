@@ -3,6 +3,7 @@ import express from 'express';
 import graphqlHTTP from 'express-graphql';
 import fs from 'fs';
 import { printSchema } from 'graphql';
+import { resolve } from 'path/posix';
 import { buildSchemaFromDatabase } from '../builders/schema';
 
 const checkFilePath = path => {
@@ -23,23 +24,27 @@ async function getGraphQLSchema({
   filePath,
   mutation,
   expressApp,
-}: initGraphQLServerArgs) {
-  checkFilePath(filePath);
-  const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
-  console.log(printSchema(schema));
+}: initGraphQLServerArgs): Promise<boolean> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      checkFilePath(filePath);
+      const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
+      console.log(printSchema(schema));
 
-  expressApp.use(
-    '/graphql',
-    cors(),
-    graphqlHTTP({
-      schema,
-      graphiql: true,
-    })
-  );
+      expressApp.use(
+        '/graphql',
+        cors(),
+        graphqlHTTP({
+          schema,
+          graphiql: true,
+        })
+      );
 
-  expressApp.listen(4000, () =>
-    console.log(` > Running at http://localhost:${4000}/graphql`)
-  );
+      resolve(true);
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /*

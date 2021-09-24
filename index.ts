@@ -5,7 +5,7 @@ function initGraphQLServer({
   mutation,
   expressApp,
 }: initGraphQLServerArgs) {
-  getGraphQLSchema({
+  return getGraphQLSchema({
     filePath,
     mutation,
     expressApp,
