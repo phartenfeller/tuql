@@ -12,7 +12,8 @@ import {
   resolver,
 } from 'graphql-sequelize';
 import pluralize, { singular } from 'pluralize';
-import { Sequelize, QueryTypes } from 'sequelize';
+import { Sequelize, QueryTypes, Association, ModelCtor } from 'sequelize';
+import { getFkInfo, getTableInfo } from '../components/dbHelpers';
 import {
   findModelKey,
   formatFieldName,
@@ -28,7 +29,11 @@ import {
   makePolyArgs,
   makeUpdateArgs,
 } from './arguments';
-import { joinTableAssociations, tableAssociations } from './associations';
+import {
+  joinTableAssociations,
+  TabAssociation,
+  tableAssociations,
+} from './associations';
 import createDefinitions from './definitions';
 
 const GenericResponseType = new GraphQLObjectType({
@@ -82,10 +87,14 @@ type TableRows = {
   name: string;
 };
 
+type Models = {
+  [key: string]: ModelCtor<any>;
+};
+
 const build = (db: Sequelize): Promise<GraphQLSchema> => {
   return new Promise(async (resolve, reject) => {
-    const models = {};
-    let associations = [];
+    const models: Models = {};
+    let associations: TabAssociation[] = [];
 
     const rows: TableRows[] = await db.query(
       'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"',
@@ -95,21 +104,21 @@ const build = (db: Sequelize): Promise<GraphQLSchema> => {
     const tables = rows.map(({ name }) => name);
 
     for (let table of tables) {
-      const [info] = await db.query(`PRAGMA table_info("${table}")`);
-      const foreignKeys = await db.query(`PRAGMA foreign_key_list("${table}")`);
+      const tableInfo = await getTableInfo(table, db);
+      const foreignKeys = await getFkInfo(table, db);
 
       if (isJoinTable(table, tables)) {
         associations = associations.concat(
-          joinTableAssociations(table, info, foreignKeys)
+          joinTableAssociations(table, tableInfo, foreignKeys)
         );
       } else {
-        models[table] = db.define(table, createDefinitions(info, table), {
+        models[table] = db.define(table, createDefinitions(tableInfo), {
           timestamps: false,
           tableName: table,
         });
 
         associations = associations.concat(
-          tableAssociations(table, info, foreignKeys)
+          tableAssociations(table, tableInfo, foreignKeys)
         );
       }
     }
@@ -204,21 +213,23 @@ const build = (db: Sequelize): Promise<GraphQLSchema> => {
         },
       };
 
-      mutations[`update${type}`] = {
-        type,
-        args: makeUpdateArgs(model),
-        resolve: async (obj, values, info) => {
-          const pkKey = getPkFieldKey(model);
+      const pkKey = getPkFieldKey(model);
 
-          const thing = await model.findOne({
-            where: { [pkKey]: values[pkKey] },
-          });
+      if (pkKey) {
+        mutations[`update${type}`] = {
+          type,
+          args: makeUpdateArgs(model),
+          resolve: async (obj, values, info) => {
+            const thing = await model.findOne({
+              where: { [pkKey]: values[pkKey] },
+            });
 
-          await thing.update(values);
+            await thing.update(values);
 
-          return thing;
-        },
-      };
+            return thing;
+          },
+        };
+      }
 
       mutations[`delete${type}`] = {
         type: GenericResponseType,
@@ -236,36 +247,47 @@ const build = (db: Sequelize): Promise<GraphQLSchema> => {
         },
       };
 
-      fieldAssociations.belongsToMany.forEach(sides => {
-        const [other] = sides.filter(side => side !== model.name);
-        const nameBits = [formatTypeName(model.name), formatTypeName(other)];
+      if (pkKey) {
+        fieldAssociations.belongsToMany.forEach(sides => {
+          const [other] = sides.filter(side => side !== model.name);
+          const nameBits = [formatTypeName(model.name), formatTypeName(other)];
 
-        ['add', 'remove'].forEach(prefix => {
-          const connector = prefix === 'add' ? 'To' : 'From';
-          const name = `${prefix}${nameBits.join(connector)}`;
-          mutations[name] = {
-            type: GenericResponseType,
-            args: makePolyArgs(model, models[other]),
-            resolve: async (obj, values, info) => {
-              const key = getPkFieldKey(model);
-              const [, , otherArgumentKey] = getPolyKeys(model, models[other]);
+          ['add', 'remove'].forEach(prefix => {
+            const connector = prefix === 'add' ? 'To' : 'From';
+            const name = `${prefix}${nameBits.join(connector)}`;
+            mutations[name] = {
+              type: GenericResponseType,
+              args: makePolyArgs(model, models[other]),
+              resolve: async (obj, values: object, info) => {
+                const [, , otherArgumentKey] = getPolyKeys(
+                  model,
+                  models[other]
+                );
 
-              const thingOne = await model.findByPk(values[key]);
-              const thingTwo = await models[other].findByPk(
-                values[otherArgumentKey]
-              );
+                if (otherArgumentKey) {
+                  const thingOne = await model.findByPk(values[pkKey]);
+                  const thingTwo = await models[other].findByPk(
+                    values[otherArgumentKey]
+                  );
 
-              const method = `${prefix}${pascalCase(singular(other))}`;
+                  const method = `${prefix}${pascalCase(singular(other))}`;
 
-              await thingOne[method](thingTwo);
+                  await thingOne[method](thingTwo);
 
-              return {
-                success: true,
-              };
-            },
-          };
+                  return {
+                    success: true,
+                  };
+                } else {
+                  console.error('No otherArgumentKey!');
+                  return {
+                    success: false,
+                  };
+                }
+              },
+            };
+          });
         });
-      });
+      }
     });
 
     console.log('queries => ', JSON.stringify(queries));

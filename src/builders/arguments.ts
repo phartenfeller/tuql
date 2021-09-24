@@ -2,15 +2,16 @@ import { attributeFields } from 'graphql-sequelize';
 import { singular } from 'pluralize';
 import { GraphQLNonNull } from 'graphql';
 import camelcase from 'camelcase';
+import { ModelCtor } from 'sequelize/types';
 
-export const getPkFieldKey = model => {
+export const getPkFieldKey = (model: ModelCtor<any>) => {
   return Object.keys(model.rawAttributes).find(key => {
     const attr = model.rawAttributes[key];
     return attr.primaryKey;
   });
 };
 
-export const makeCreateArgs = model => {
+export const makeCreateArgs = (model: ModelCtor<any>) => {
   const fields = attributeFields(model);
   const pk = getPkFieldKey(model);
 
@@ -19,7 +20,7 @@ export const makeCreateArgs = model => {
   return fields;
 };
 
-export const makeUpdateArgs = model => {
+export const makeUpdateArgs = (model: ModelCtor<any>) => {
   const fields = attributeFields(model);
 
   return Object.keys(fields).reduce((acc, key) => {
@@ -34,14 +35,21 @@ export const makeUpdateArgs = model => {
   }, fields);
 };
 
-export const makeDeleteArgs = model => {
+export const makeDeleteArgs = (model: ModelCtor<any>) => {
   const fields = attributeFields(model);
   const pk = getPkFieldKey(model);
 
-  return { [pk]: fields[pk] };
+  if (pk) {
+    return { [pk]: fields[pk] };
+  } else {
+    throw new Error(`Could not find pk | model => ${model.tableName}`);
+  }
 };
 
-export const getPolyKeys = (model, otherModel) => {
+export const getPolyKeys = (
+  model: ModelCtor<any>,
+  otherModel: ModelCtor<any>
+) => {
   const key = getPkFieldKey(model);
   const otherKey = getPkFieldKey(otherModel);
 
@@ -56,13 +64,22 @@ export const getPolyKeys = (model, otherModel) => {
   return [key, otherKey, otherKey];
 };
 
-export const makePolyArgs = (model, otherModel) => {
+export const makePolyArgs = (
+  model: ModelCtor<any>,
+  otherModel: ModelCtor<any>
+) => {
   const [key, otherKey, otherKeyFormatted] = getPolyKeys(model, otherModel);
   const fields = attributeFields(model);
   const otherFields = attributeFields(otherModel);
 
-  return {
-    [key]: fields[key],
-    [otherKeyFormatted]: otherFields[otherKey],
-  };
+  if (key && otherKeyFormatted) {
+    return {
+      [key]: fields[key],
+      [otherKeyFormatted]: otherFields[otherKey],
+    };
+  } else {
+    throw new Error(
+      `Could not find keys | ${model.tableName} key => "${key}" - ${otherModel.tableName} otherKeyFormatted => "${otherKeyFormatted}"`
+    );
+  }
 };

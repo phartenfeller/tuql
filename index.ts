@@ -1,3 +1,6 @@
 import getGraphQLSchema from './src/bin';
 
-getGraphQLSchema('/home/philipp/Code/tuql/data.sqlite');
+getGraphQLSchema({
+  filePath: '/home/philipp/Code/tuql/data.sqlite',
+  mutation: true,
+});

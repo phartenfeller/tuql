@@ -1,4 +1,5 @@
-import { TEXT, INTEGER, REAL, NUMERIC, BLOB } from 'sequelize';
+import { TEXT, INTEGER, REAL, BLOB } from 'sequelize';
+import { ColumnInfo } from 'src/components/dbHelpers/getTableInfo';
 import { formatFieldName } from '../utils';
 
 const transformColumnToType = column => {
@@ -23,14 +24,14 @@ const transformColumnToType = column => {
     c === 'date' ||
     c === 'datetime'
   ) {
-    return NUMERIC;
+    return REAL;
   }
 
   return BLOB;
 };
 
-export default columns => {
-  return columns.reduce((acc, column) => {
+function createDefinitions(tableInfo: ColumnInfo[]) {
+  return tableInfo.reduce((acc, column) => {
     acc[formatFieldName(column.name)] = {
       type: transformColumnToType(column.type),
       primaryKey: column.pk === 1,
@@ -42,4 +43,6 @@ export default columns => {
 
     return acc;
   }, {});
-};
+}
+
+export default createDefinitions;

@@ -1,4 +1,6 @@
 import { plural, singular } from 'pluralize';
+import { FkInfo } from 'src/components/dbHelpers/getFkInfo';
+import { ColumnInfo } from 'src/components/dbHelpers/getTableInfo';
 import { formatFieldName } from '../utils';
 
 const FK_SUFFIX_REGEX = /(_id|Id)$/;
@@ -33,7 +35,11 @@ const joinTableFromForeignKeys = (table, foreignKeys) => {
   return formJoinTableAssociations(a, b, aKey, bKey, table);
 };
 
-export const joinTableAssociations = (table: String, info, foreignKeys) => {
+export const joinTableAssociations = (
+  table: string,
+  info: ColumnInfo[],
+  foreignKeys: FkInfo[]
+) => {
   if (foreignKeys.length) {
     return joinTableFromForeignKeys(table, foreignKeys);
   }
@@ -46,8 +52,21 @@ export const joinTableAssociations = (table: String, info, foreignKeys) => {
   return formJoinTableAssociations(a, b, aKey, bKey, table);
 };
 
-export const tableAssociations = (table, info, foreignKeys) => {
-  const associations = [];
+export type TabAssociation = {
+  from: string;
+  to: string;
+  type: string;
+  options?: {
+    foreignKey?: string;
+  };
+};
+
+export const tableAssociations = (
+  table: string,
+  info: ColumnInfo[],
+  foreignKeys: FkInfo[]
+): TabAssociation[] => {
+  const associations: TabAssociation[] = [];
   const fkColumns = foreignKeys.map(({ from }) => from);
 
   foreignKeys.forEach(({ table: otherTable, from }) => {

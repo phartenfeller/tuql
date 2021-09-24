@@ -1,12 +1,14 @@
-import getTableInfo from './getTableInfo';
+import { getTableInfo } from './getTableInfo';
 import initTestDatabase from '../../../testUtils/initTestDatabase';
 
 describe('getTableInfo', () => {
-  test('return type', async () => {
+  test('test values', async () => {
     const db = await initTestDatabase();
     const info = await getTableInfo('tracks', db);
 
-    console.log('info', info);
-    expect(info).toBeInstanceOf(Object);
+    const pkCol = info.find(i => i.pk === 1);
+
+    expect(pkCol?.name).toBe('TrackId');
+    expect(pkCol?.type).toBe('INTEGER');
   });
 });

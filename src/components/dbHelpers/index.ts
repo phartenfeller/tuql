@@ -1,3 +1,2 @@
-import getTableInfo from './getTableInfo';
-
-export default { getTableInfo };
+export * from './getTableInfo';
+export * from './getFkInfo';

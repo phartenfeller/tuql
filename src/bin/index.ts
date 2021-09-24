@@ -20,8 +20,8 @@ type props = {
   mutation: boolean;
 };
 
-async function getGraphQLSchema(args: props) {
-  const schema = await buildSchemaFromDatabase(args.filePath);
+async function getGraphQLSchema({ filePath, mutation }: props) {
+  const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
   console.log(printSchema(schema));
 
   const app = express();

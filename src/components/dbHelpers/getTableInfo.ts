@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize/types';
 
-type ColumnInfo = {
+export type ColumnInfo = {
   cid: number;
   name: string;
   type: string;
@@ -9,12 +9,10 @@ type ColumnInfo = {
   pk: number;
 };
 
-async function getTableInfo(
+export async function getTableInfo(
   tableName: string,
   db: Sequelize
 ): Promise<ColumnInfo[]> {
   const [info] = await db.query(`PRAGMA table_info("${tableName}")`);
   return info as ColumnInfo[];
 }
-
-export default getTableInfo;
