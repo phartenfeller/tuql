@@ -33,7 +33,7 @@ const joinTableFromForeignKeys = (table, foreignKeys) => {
   return formJoinTableAssociations(a, b, aKey, bKey, table);
 };
 
-export const joinTableAssociations = (table, info, foreignKeys) => {
+export const joinTableAssociations = (table: String, info, foreignKeys) => {
   if (foreignKeys.length) {
     return joinTableFromForeignKeys(table, foreignKeys);
   }

@@ -15,8 +15,13 @@ const FilePath = path => {
   return fs.realpathSync(path);
 };
 
-async function getGraphQLSchema(filePath) {
-  const schema = await buildSchemaFromDatabase(filePath);
+type props = {
+  filePath: string;
+  mutation: boolean;
+};
+
+async function getGraphQLSchema(args: props) {
+  const schema = await buildSchemaFromDatabase(args.filePath);
   console.log(printSchema(schema));
 
   const app = express();

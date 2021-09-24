@@ -3,22 +3,22 @@ import {
   GraphQLBoolean,
   GraphQLList,
   GraphQLObjectType,
-  GraphQLSchema
+  GraphQLSchema,
 } from 'graphql';
 import {
   attributeFields,
   defaultArgs,
   defaultListArgs,
-  resolver
+  resolver,
 } from 'graphql-sequelize';
 import pluralize, { singular } from 'pluralize';
-import Sequelize, { QueryTypes } from 'sequelize';
+import { Sequelize, QueryTypes } from 'sequelize';
 import {
   findModelKey,
   formatFieldName,
   formatTypeName,
   isJoinTable,
-  pascalCase
+  pascalCase,
 } from '../utils';
 import {
   getPkFieldKey,
@@ -26,7 +26,7 @@ import {
   makeCreateArgs,
   makeDeleteArgs,
   makePolyArgs,
-  makeUpdateArgs
+  makeUpdateArgs,
 } from './arguments';
 import { joinTableAssociations, tableAssociations } from './associations';
 import createDefinitions from './definitions';
@@ -38,7 +38,13 @@ const GenericResponseType = new GraphQLObjectType({
   },
 });
 
-export const buildSchemaFromDatabase = databaseFile => {
+type buildParams = {
+  databaseFile: string;
+};
+
+export const buildSchemaFromDatabase = ({
+  databaseFile,
+}: buildParams): Promise<GraphQLSchema> => {
   return new Promise(async (resolve, reject) => {
     const db = new Sequelize({
       dialect: 'sqlite',
@@ -72,12 +78,16 @@ export const buildSchemaFromInfile = infile => {
   });
 };
 
-const build = db => {
+type TableRows = {
+  name: string;
+};
+
+const build = (db: Sequelize): Promise<GraphQLSchema> => {
   return new Promise(async (resolve, reject) => {
     const models = {};
     let associations = [];
 
-    const rows = await db.query(
+    const rows: TableRows[] = await db.query(
       'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"',
       { type: QueryTypes.SELECT }
     );
@@ -129,7 +139,7 @@ const build = db => {
         belongsToMany: associations
           .filter(({ type }) => type === 'belongsToMany')
           .map(({ from, to }) => [from, to])
-          .filter(sides => sides.includes(key)),
+          .filter((sides: string[]) => sides.includes(key)),
       };
 
       const type = new GraphQLObjectType({
