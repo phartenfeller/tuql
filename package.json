@@ -1,6 +1,6 @@
 {
   "name": "@phartenfeller/tuql",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fork of tuql without CLI but usable as a library",
   "main": "dist/index.js",
   "author": "Philipp Hartenfeller",
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "yarn tsc",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "start-server": "yarn ts-node testUtils/startServer.ts"
