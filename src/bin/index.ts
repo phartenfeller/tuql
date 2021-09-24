@@ -5,28 +5,30 @@ import fs from 'fs';
 import { printSchema } from 'graphql';
 import { buildSchemaFromDatabase } from '../builders/schema';
 
-const FilePath = path => {
+const checkFilePath = path => {
   if (!fs.existsSync(path)) {
-    console.log('');
-    console.error(` > File does not exist: ${path}`);
-    process.exit();
+    throw new Error(`File does not exist: ${path}`);
   }
 
   return fs.realpathSync(path);
 };
 
-type props = {
+export type initGraphQLServerArgs = {
   filePath: string;
   mutation: boolean;
+  expressApp: express.Express;
 };
 
-async function getGraphQLSchema({ filePath, mutation }: props) {
+async function getGraphQLSchema({
+  filePath,
+  mutation,
+  expressApp,
+}: initGraphQLServerArgs) {
+  checkFilePath(filePath);
   const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
   console.log(printSchema(schema));
 
-  const app = express();
-
-  app.use(
+  expressApp.use(
     '/graphql',
     cors(),
     graphqlHTTP({
@@ -35,7 +37,7 @@ async function getGraphQLSchema({ filePath, mutation }: props) {
     })
   );
 
-  app.listen(4000, () =>
+  expressApp.listen(4000, () =>
     console.log(` > Running at http://localhost:${4000}/graphql`)
   );
 }

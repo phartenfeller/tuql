@@ -1,6 +1,15 @@
-import getGraphQLSchema from './src/bin';
+import getGraphQLSchema, { initGraphQLServerArgs } from './src/bin';
 
-getGraphQLSchema({
-  filePath: '/home/philipp/Code/tuql/data.sqlite',
-  mutation: true,
-});
+function initGraphQLServer({
+  filePath,
+  mutation,
+  expressApp,
+}: initGraphQLServerArgs) {
+  getGraphQLSchema({
+    filePath,
+    mutation,
+    expressApp,
+  });
+}
+
+export default initGraphQLServer;
