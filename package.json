@@ -1,11 +1,8 @@
 {
-  "name": "tuql",
-  "version": "1.7.0",
+  "name": "@phartenfeller/tuql",
+  "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
-  "bin": {
-    "tuql": "dist/bin/index.js"
-  },
   "scripts": {
     "start": "node dist/index.js",
     "build": "yarn tsc",
@@ -25,7 +22,6 @@
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.0.2",
     "cors": "^2.8.5",
-    "express": "^4.17.1",
     "express-graphql": "^0.9.0",
     "graphql": "^14.5.3",
     "graphql-relay": "^0.6.0",
@@ -43,5 +39,14 @@
     "ts-jest": "^27.0.5",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3"
-  }
+  },
+  "peerDependencies": {
+    "express": "^4.17.1"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README",
+    "LICENSE"
+  ]
 }
