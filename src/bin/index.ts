@@ -15,13 +15,11 @@ const checkFilePath = path => {
 export type initGraphQLServerArgs = {
   filePath: string;
   mutation: boolean;
-  expressApp: express.Express;
 };
 
 async function getGraphQLSchema({
   filePath,
   mutation,
-  expressApp,
 }: initGraphQLServerArgs): Promise<GraphQLSchema> {
   return new Promise(async (resolve, reject) => {
     try {

@@ -9,7 +9,6 @@ async function main() {
   const schema = await initGraphQLServer({
     filePath: './testUtils/chinook.db',
     mutation: false,
-    expressApp: app,
   });
 
   app.use(
