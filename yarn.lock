@@ -701,6 +701,7 @@ __metadata:
     typescript: ^4.4.3
   peerDependencies:
     express: ^4.17.1
+    express-graphql: ^0.9.0
   languageName: unknown
   linkType: soft
 

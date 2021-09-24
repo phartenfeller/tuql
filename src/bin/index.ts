@@ -1,9 +1,7 @@
-import cors from 'cors';
 import express from 'express';
 import graphqlHTTP from 'express-graphql';
 import fs from 'fs';
-import { printSchema } from 'graphql';
-import { resolve } from 'path/posix';
+import { GraphQLSchema, printSchema } from 'graphql';
 import { buildSchemaFromDatabase } from '../builders/schema';
 
 const checkFilePath = path => {
@@ -24,23 +22,23 @@ async function getGraphQLSchema({
   filePath,
   mutation,
   expressApp,
-}: initGraphQLServerArgs): Promise<boolean> {
+}: initGraphQLServerArgs): Promise<GraphQLSchema> {
   return new Promise(async (resolve, reject) => {
     try {
       checkFilePath(filePath);
       const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
       console.log(printSchema(schema));
 
-      expressApp.use(
-        '/graphql',
-        cors(),
-        graphqlHTTP({
-          schema,
-          graphiql: true,
-        })
-      );
+      // expressApp.use(
+      //   '/graphql',
+      //   cors(),
+      //   graphqlHTTP({
+      //     schema,
+      //     graphiql: true,
+      //   })
+      // );
 
-      resolve(true);
+      resolve(schema);
     } catch (err) {
       reject(err);
     }
