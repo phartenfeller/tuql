@@ -1,6 +1,6 @@
 {
   "name": "@phartenfeller/tuql",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Fork of tuql without CLI but usable as a library",
   "main": "dist/index.js",
   "author": "Philipp Hartenfeller",

@@ -35,6 +35,7 @@ import {
   tableAssociations,
 } from './associations';
 import createDefinitions from './definitions';
+import sqlite3 from 'sqlite3';
 
 const GenericResponseType = new GraphQLObjectType({
   name: 'GenericResponse',
@@ -53,6 +54,7 @@ export const buildSchemaFromDatabase = ({
   return new Promise(async (resolve, reject) => {
     const db = new Sequelize({
       dialect: 'sqlite',
+      dialectModule: sqlite3,
       storage: databaseFile,
       logging: false,
     });
@@ -65,6 +67,7 @@ export const buildSchemaFromInfile = infile => {
   return new Promise(async (resolve, reject) => {
     const db = new Sequelize({
       dialect: 'sqlite',
+      dialectModule: sqlite3,
       storage: ':memory:',
       logging: false,
     });
