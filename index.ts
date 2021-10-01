@@ -1,9 +1,12 @@
 import getGraphQLSchema, { initGraphQLServerArgs } from './src/bin';
 
-function initGraphQLServer({ filePath, mutation }: initGraphQLServerArgs) {
+function initGraphQLServer({
+  filePath,
+  mutations = false,
+}: initGraphQLServerArgs) {
   return getGraphQLSchema({
     filePath,
-    mutation,
+    mutations,
   });
 }
 

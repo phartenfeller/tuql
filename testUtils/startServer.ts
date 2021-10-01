@@ -8,7 +8,11 @@ async function main() {
 
   const schema = await initGraphQLServer({
     filePath: './testUtils/chinook.db',
-    mutation: false,
+    mutations: {
+      create: true,
+      update: false,
+      delete: false,
+    },
   });
 
   app.use(

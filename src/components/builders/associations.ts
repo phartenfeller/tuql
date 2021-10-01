@@ -1,7 +1,7 @@
 import { plural, singular } from 'pluralize';
 import { FkInfo } from 'src/components/dbHelpers/getFkInfo';
 import { ColumnInfo } from 'src/components/dbHelpers/getTableInfo';
-import { formatFieldName } from '../utils';
+import { formatFieldName } from '../../utils';
 
 const FK_SUFFIX_REGEX = /(_id|Id)$/;
 

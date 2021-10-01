@@ -1,6 +1,6 @@
 import { TEXT, INTEGER, REAL, BLOB } from 'sequelize';
 import { ColumnInfo } from 'src/components/dbHelpers/getTableInfo';
-import { formatFieldName } from '../utils';
+import { formatFieldName } from '../../utils';
 
 const transformColumnToType = column => {
   const c = column.toLowerCase();

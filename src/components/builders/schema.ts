@@ -13,14 +13,14 @@ import {
 } from 'graphql-sequelize';
 import pluralize, { singular } from 'pluralize';
 import { Sequelize, QueryTypes, Association, ModelCtor } from 'sequelize';
-import { getFkInfo, getTableInfo } from '../components/dbHelpers';
+import { getFkInfo, getTableInfo } from '../dbHelpers';
 import {
   findModelKey,
   formatFieldName,
   formatTypeName,
   isJoinTable,
   pascalCase,
-} from '../utils';
+} from '../../utils';
 import {
   getPkFieldKey,
   getPolyKeys,
@@ -36,6 +36,8 @@ import {
 } from './associations';
 import createDefinitions from './definitions';
 import sqlite3 from 'sqlite3';
+import { MutationParams } from 'src/types/MutationParams';
+import getMutationOptions from './util/getMutationOptions';
 
 const GenericResponseType = new GraphQLObjectType({
   name: 'GenericResponse',
@@ -44,13 +46,15 @@ const GenericResponseType = new GraphQLObjectType({
   },
 });
 
-type buildParams = {
+type buildSchemaParams = {
   databaseFile: string;
+  mutations: MutationParams;
 };
 
 export const buildSchemaFromDatabase = ({
   databaseFile,
-}: buildParams): Promise<GraphQLSchema> => {
+  mutations,
+}: buildSchemaParams): Promise<GraphQLSchema> => {
   return new Promise(async (resolve, reject) => {
     const db = new Sequelize({
       dialect: 'sqlite',
@@ -59,32 +63,32 @@ export const buildSchemaFromDatabase = ({
       logging: false,
     });
 
-    resolve(await build(db));
+    resolve(await build({ db, mutations }));
   });
 };
 
-export const buildSchemaFromInfile = infile => {
-  return new Promise(async (resolve, reject) => {
-    const db = new Sequelize({
-      dialect: 'sqlite',
-      dialectModule: sqlite3,
-      storage: ':memory:',
-      logging: false,
-    });
+// export const buildSchemaFromInfile = infile => {
+//   return new Promise(async (resolve, reject) => {
+//     const db = new Sequelize({
+//       dialect: 'sqlite',
+//       dialectModule: sqlite3,
+//       storage: ':memory:',
+//       logging: false,
+//     });
 
-    const contents = fs.readFileSync(infile);
-    const statements = contents
-      .toString()
-      .split(/;(\r?\n|\r)/g)
-      .filter(s => s.trim().length);
+//     const contents = fs.readFileSync(infile);
+//     const statements = contents
+//       .toString()
+//       .split(/;(\r?\n|\r)/g)
+//       .filter(s => s.trim().length);
 
-    for (let stmt of statements) {
-      await db.query(stmt);
-    }
+//     for (let stmt of statements) {
+//       await db.query(stmt);
+//     }
 
-    resolve(await build(db));
-  });
-};
+//     resolve(await build(db));
+//   });
+// };
 
 type TableRows = {
   name: string;
@@ -94,7 +98,14 @@ type Models = {
   [key: string]: ModelCtor<any>;
 };
 
-const build = (db: Sequelize): Promise<GraphQLSchema> => {
+type buildParams = {
+  db: Sequelize;
+  mutations: MutationParams;
+};
+
+const build = ({ db, mutations }: buildParams): Promise<GraphQLSchema> => {
+  const mutationOptions = getMutationOptions(mutations);
+
   return new Promise(async (resolve, reject) => {
     const models: Models = {};
     let associations: TabAssociation[] = [];
@@ -201,61 +212,76 @@ const build = (db: Sequelize): Promise<GraphQLSchema> => {
         resolve: resolver(model),
       };
 
-      mutations[`create${type}`] = {
-        type,
-        args: makeCreateArgs(model),
-        resolve: async (obj, values, info) => {
-          const options = {
-            // By default sequelize will insert all columns which can cause a
-            // bug where default values, that use functions, defined at the
-            // database layer don't get populated correctly.
-            fields: Object.keys(values),
-          };
-          const thing = await model.create(values, options);
-          return thing;
-        },
-      };
-
-      const pkKey = getPkFieldKey(model);
-
-      if (pkKey) {
-        mutations[`update${type}`] = {
+      if (mutationOptions.create) {
+        mutations[`create${type}`] = {
           type,
-          args: makeUpdateArgs(model),
+          args: makeCreateArgs(model),
           resolve: async (obj, values, info) => {
-            const thing = await model.findOne({
-              where: { [pkKey]: values[pkKey] },
-            });
-
-            await thing.update(values);
-
+            const options = {
+              // By default sequelize will insert all columns which can cause a
+              // bug where default values, that use functions, defined at the
+              // database layer don't get populated correctly.
+              fields: Object.keys(values),
+            };
+            const thing = await model.create(values, options);
             return thing;
           },
         };
       }
 
-      mutations[`delete${type}`] = {
-        type: GenericResponseType,
-        args: makeDeleteArgs(model),
-        resolve: async (obj, values, info) => {
-          const thing = await model.findOne({
-            where: values,
-          });
+      const pkKey = getPkFieldKey(model);
 
-          await thing.destroy();
+      if (mutationOptions.update) {
+        if (pkKey) {
+          mutations[`update${type}`] = {
+            type,
+            args: makeUpdateArgs(model),
+            resolve: async (obj, values, info) => {
+              const thing = await model.findOne({
+                where: { [pkKey]: values[pkKey] },
+              });
 
-          return {
-            success: true,
+              await thing.update(values);
+
+              return thing;
+            },
           };
-        },
-      };
+        }
+      }
+
+      if (mutationOptions.delete) {
+        mutations[`delete${type}`] = {
+          type: GenericResponseType,
+          args: makeDeleteArgs(model),
+          resolve: async (obj, values, info) => {
+            const thing = await model.findOne({
+              where: values,
+            });
+
+            await thing.destroy();
+
+            return {
+              success: true,
+            };
+          },
+        };
+      }
 
       if (pkKey) {
         fieldAssociations.belongsToMany.forEach(sides => {
           const [other] = sides.filter(side => side !== model.name);
           const nameBits = [formatTypeName(model.name), formatTypeName(other)];
 
-          ['add', 'remove'].forEach(prefix => {
+          let options: string[] = [];
+
+          if (mutationOptions.create) {
+            options.push(`add`);
+          }
+          if (mutationOptions.delete) {
+            options.push(`remove`);
+          }
+
+          options.forEach(prefix => {
             const connector = prefix === 'add' ? 'To' : 'From';
             const name = `${prefix}${nameBits.join(connector)}`;
             mutations[name] = {
@@ -300,10 +326,15 @@ const build = (db: Sequelize): Promise<GraphQLSchema> => {
       fields: queries,
     });
 
-    const mutation = new GraphQLObjectType({
-      name: 'Mutation',
-      fields: mutations,
-    });
+    console.log('mutations => ', JSON.stringify(mutations));
+
+    const mutation =
+      Object.keys(mutations).length === 0
+        ? null
+        : new GraphQLObjectType({
+            name: 'Mutation',
+            fields: mutations,
+          });
 
     resolve(
       new GraphQLSchema({

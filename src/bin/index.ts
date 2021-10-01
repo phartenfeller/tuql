@@ -1,8 +1,7 @@
-import express from 'express';
-import graphqlHTTP from 'express-graphql';
 import fs from 'fs';
 import { GraphQLSchema, printSchema } from 'graphql';
-import { buildSchemaFromDatabase } from '../builders/schema';
+import { MutationParams } from 'src/types/MutationParams';
+import { buildSchemaFromDatabase } from '../components/builders/schema';
 
 const checkFilePath = path => {
   if (!fs.existsSync(path)) {
@@ -14,17 +13,20 @@ const checkFilePath = path => {
 
 export type initGraphQLServerArgs = {
   filePath: string;
-  mutation: boolean;
+  mutations: MutationParams;
 };
 
 async function getGraphQLSchema({
   filePath,
-  mutation,
+  mutations,
 }: initGraphQLServerArgs): Promise<GraphQLSchema> {
   return new Promise(async (resolve, reject) => {
     try {
       checkFilePath(filePath);
-      const schema = await buildSchemaFromDatabase({ databaseFile: filePath });
+      const schema = await buildSchemaFromDatabase({
+        databaseFile: filePath,
+        mutations,
+      });
       console.log(printSchema(schema));
 
       // expressApp.use(
