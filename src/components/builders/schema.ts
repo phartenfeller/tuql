@@ -12,8 +12,8 @@ import {
   resolver,
 } from 'graphql-sequelize';
 import pluralize, { singular } from 'pluralize';
-import { Sequelize, QueryTypes, Association, ModelCtor } from 'sequelize';
-import { getFkInfo, getTableInfo } from '../dbHelpers';
+import { Sequelize, ModelCtor } from 'sequelize';
+import { getFkInfo, getTableInfo, getTables } from '../dbHelpers';
 import {
   findModelKey,
   formatFieldName,
@@ -90,10 +90,6 @@ export const buildSchemaFromDatabase = ({
 //   });
 // };
 
-type TableRows = {
-  name: string;
-};
-
 type Models = {
   [key: string]: ModelCtor<any>;
 };
@@ -110,12 +106,7 @@ const build = ({ db, mutations }: buildParams): Promise<GraphQLSchema> => {
     const models: Models = {};
     let associations: TabAssociation[] = [];
 
-    const rows: TableRows[] = await db.query(
-      'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"',
-      { type: QueryTypes.SELECT }
-    );
-
-    const tables = rows.map(({ name }) => name);
+    const tables = await getTables(db);
 
     for (let table of tables) {
       const tableInfo = await getTableInfo(table, db);
