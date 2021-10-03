@@ -1,9 +1,9 @@
-import fs from 'fs';
 import {
   GraphQLBoolean,
   GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
+  GraphQLString,
 } from 'graphql';
 import {
   attributeFields,
@@ -191,10 +191,25 @@ const build = ({ db, mutations }: buildParams): Promise<GraphQLSchema> => {
 
       types[key] = type;
 
+      // orderBy from: https://github.com/mickhansen/graphql-sequelize/issues/356#issuecomment-294011167
       queries[pluralize(formatFieldName(key))] = {
         type: new GraphQLList(type),
-        args: defaultListArgs(model),
-        resolve: resolver(model),
+        args: Object.assign(defaultListArgs(model), {
+          orderBy: {
+            type: new GraphQLList(new GraphQLList(GraphQLString)),
+            description:
+              'Order by multiple columns and set directions. Example: genres(orderBy: [["name", "DESC"], ["genreId", "ASC"]) {...}',
+          },
+        }),
+        resolve: resolver(model, {
+          before: (opts, args) => {
+            const options = Object.assign({ order: [] }, opts);
+            if (args.orderBy) {
+              options.order = options.order.concat(args.orderBy);
+            }
+            return options;
+          },
+        }),
       };
 
       queries[singular(formatFieldName(key))] = {

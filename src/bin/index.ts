@@ -27,7 +27,7 @@ async function getGraphQLSchema({
         databaseFile: filePath,
         mutations,
       });
-      console.log(printSchema(schema));
+      //  console.log(printSchema(schema));
 
       // expressApp.use(
       //   '/graphql',
